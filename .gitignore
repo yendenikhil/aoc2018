@@ -1,5 +1,11 @@
 *.class
+*.tasty
 target/
+project/
+build.sbt
+.bsp/
 *.tmp
 *.log
+*.in
+*.txt
 
