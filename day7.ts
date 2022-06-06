@@ -1,3 +1,4 @@
+import { delay } from "https://deno.land/std@0.142.0/async/mod.ts";
 const p = console.log;
 const raw = await Deno.readTextFile("7.1.in");
 const lines = raw.trim().split("\n");
@@ -5,17 +6,23 @@ const lines = raw.trim().split("\n");
 class PrioQueue<T> {
   comp: (a: T, b: T) => number;
   queue: T[];
-  constructor(comp: (a: T, b: T) => number) {
+  autosort: boolean
+  constructor(comp: (a: T, b: T) => number, autosort = true) {
     this.comp = comp;
     this.queue = [];
+    this.autosort = autosort
   }
   push(item: T): void {
     if (this.queue.includes(item)) return;
     this.queue.push(item);
-    this.queue.sort(this.comp);
+    if (this.autosort)
+      this.queue.sort(this.comp);
   }
   isPresent(): boolean {
     return this.queue.length > 0;
+  }
+  sort(): void {
+    this.queue.sort(this.comp)
   }
 
   next(): T {
@@ -29,7 +36,7 @@ class PrioQueue<T> {
   }
 }
 
-const part1 = (input: string[]) => {
+const part1 = async (input: string[]) => {
   // build map
   const map: Map<string, string[]> = lines
     .map((line) =>
@@ -37,70 +44,38 @@ const part1 = (input: string[]) => {
         .replace(" can begin.", "")
     )
     .reduce((acc, v) => {
-      const next = acc.get(v[0]) ?? [];
-      next.push(v[1]);
+      const next = acc.get(v[1]) ?? [];
+      next.push(v[0]);
       next.sort();
-      acc.set(v[0], next);
+      acc.set(v[1], next);
       return acc;
     }, new Map());
+  // add starting points
+  map.forEach((v, k) => {
+    v.filter((e) => !map.has(e)).forEach((e) => map.set(e, []));
+  });
   p(map);
-  // find starting points
-  const visited: Set<string> = new Set()
-  const pq: PrioQueue<string> = new PrioQueue<string>((a: string, b: string) => a.charCodeAt(0) - b.charCodeAt(0))
-  const start = [...map.keys()].filter(k => ready(k, visited, map))
-  start.forEach(k => pq.push(k))
+  const visited: Set<string> = new Set();
+  const pq: PrioQueue<string> = new PrioQueue<string>((a: string, b: string) =>
+    a.charCodeAt(0) - b.charCodeAt(0), false
+  );
+  map.forEach((v, k) => pq.push(k))
+  pq.sort()
   let ans = ""
-  while(pq.isPresent()) {
+  while(pq.isPresent() && visited.size < map.size){
     const curr = pq.next()
-    if (visited.has(curr) )
-      continue
-    ans += curr
-    const next = map.get(curr)
-    if (next === undefined) 
-    continue
-    visited.add(curr)
-    next.filter(k => ready(k, visited, map)).forEach(k => pq.push(k))
-    // p({curr, visited, next, pq})
+    const req = map.get(curr) ?? []
+    // p({curr, req})
+    // await delay(1000)
+    if (!req.some(e => !visited.has(e))) {
+      ans += curr
+      visited.add(curr)
+      pq.sort()
+    } else {
+      pq.push(curr)
+    }
   }
   p(ans)
 };
 
-const ready = (
-  curr: string,
-  visited: Set<string>,
-  map: Map<string, string[]>,
-): boolean => {
-  let isready = true;
-  if (visited.has(curr)) {
-    return false
-  } else {
-    map.forEach((v, k) => {
-      if (!visited.has(k) && v.includes(curr)) isready = false;
-    });
-  }
-  return isready;
-};
-
-const dfs = (curr: string, map: Map<string, string[]>): string => {
-  const list = map.get(curr);
-  let ans = curr;
-  // p({curr, map, list})
-  if (list === undefined || list.length === 0) {
-    return ans;
-  }
-  while (true) {
-    const next = list.shift();
-    let found = false;
-    if (next === undefined) return ans;
-    map.forEach((arr) => {
-      if (arr.includes(next)) found = true;
-    });
-    if (!found) {
-      ans += dfs(next, map);
-    }
-  }
-
-  return ans;
-};
-
-part1(lines);
+await part1(lines);
