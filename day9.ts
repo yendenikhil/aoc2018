@@ -1,6 +1,7 @@
 const p = console.log
-const raw = "431 players; last marble is worth 7095000 points"
+const raw = "431 players; last marble is worth 70950 points"
 // const raw = "09 players; last marble is worth 25 points"
+const max = (a: number, b: number) => a > b ? a : b
 const num_users = parseInt(raw.split(' ')[0])
 const num_marbles = parseInt(raw.split(' ')[6])
 
@@ -76,6 +77,7 @@ class DLL {
     return ans 
   }
 }
+const solve = (num_users: number, num_marbles: number) => {
 const buff = new DLL(0)
 const scores = []
 for (let i = 0; i < num_users; i++) {
@@ -98,9 +100,10 @@ for (let i = 1; i <= num_marbles; i++) {
     buff.next()
     buff.push(i)
   }
-  // p(buff.toString())
+  }
+  return scores.reduce(max)
 }
+p(solve(num_users, num_marbles))
+p(solve(num_users, num_marbles * 100))
 
-const max = (a: number, b: number) => a > b ? a : b
 
-p(scores.reduce(max))
